@@ -1,73 +1,26 @@
-# React + TypeScript + Vite
+# SLICE
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> **Draw one line. Split the shape. Pray you didn’t lob off 73% like a barbarian.**
 
-Currently, two official plugins are available:
+**SLICE** is a neon-soaked precision puzzle for anyone who trusts their gut more than geometry homework. You get a weird 2D thing on screen. You drag a laser-straight slice through it. Release — and the game tells you how close your two halves are to **50/50 by area**.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+No calculators. No protractor. Just vibes, spatial intuition, and the slow realization that you are *not* as balanced as you thought.
 
-## React Compiler
+## How it plays (the fun part)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. A shape appears. It might be polite (a hexagon) or chaos (something that looks like a melted Pac-Man).
+2. Click or drag a cut across the shape. The line is infinite in your mind; only what hits the polygon counts.
+3. The two pieces drift apart like they’re mad at each other.
+4. You get a ratio, a grade, and — if the universe likes you — a little hit of *PERFECT* energy.
 
-## Expanding the ESLint configuration
+Miss the shape entirely? It flashes **nope** and you get another shot. The shape is judgy, not cruel.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Grades (so you know what to brag about)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Roughly speaking: nail **≥49.5%** on the smaller side and you’ve earned **PERFECT** bragging rights. Drift downward through **CLEAN**, **SHARP**, **NOT BAD**, until you hit **MISS** — which we call “creative interpretation of halves.”
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Streaks, daily challenges, share cards — the works. Chop first, apologize to Euclid later.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+---
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+*SLICE — where “close enough” is never close enough.*
