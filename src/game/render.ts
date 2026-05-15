@@ -2,7 +2,7 @@ import { distance, normalize, polygonCentroid, scale, sideOfLine } from './geome
 import type { Particle, Point, Polygon, ShapeRenderStyle, SliceLine, SliceResult } from './types'
 
 const CANVAS_SIZE = 500
-const SHARP_LINE_DISTANCE_TOLERANCE = 0.25
+const CLIP_DISTANCE = CANVAS_SIZE * 4
 
 type DrawOptions = {
   shape: Polygon
@@ -112,75 +112,106 @@ const drawSplitResult = (context: CanvasRenderingContext2D, options: DrawOptions
       : { x: 1, y: 0 }
     const offsetDirection = distance(direction, { x: 0, y: 0 }) > 0 ? direction : fallback
     const offset = scale(offsetDirection, 30 * eased)
-    drawShape(context, polygon, fill, offset, options.shapeStyle, options.dragLine)
+
+    if (options.dragLine) {
+      drawClippedShape(
+        context,
+        options.shape,
+        fill,
+        offset,
+        options.shapeStyle,
+        options.dragLine,
+        sideForPolygon(polygon, options.dragLine),
+      )
+      return
+    }
+
+    drawShape(context, polygon, fill, offset, options.shapeStyle)
   }
 
   drawHalf(options.result.left, options.shapeColor)
   drawHalf(options.result.right, options.shapeColor)
 }
 
-const tracePath = (
-  context: CanvasRenderingContext2D,
-  polygon: Polygon,
-  offset: Point,
-  sharpLine?: SliceLine | null,
-) => {
+const tracePath = (context: CanvasRenderingContext2D, polygon: Polygon, offset: Point) => {
   if (polygon.length < 3) return
 
   const n = polygon.length
   context.beginPath()
 
-  const sharpVertices = polygon.map((point) => isPointOnLine(point, sharpLine))
-  const entryPoint = (index: number) => {
-    const current = polygon[index]
-    if (sharpVertices[index]) return current
-
-    const previous = polygon[(index - 1 + n) % n]
-    return midpoint(previous, current)
-  }
-  const exitPoint = (index: number) => {
-    const current = polygon[index]
-    if (sharpVertices[index]) return current
-
-    const next = polygon[(index + 1) % n]
-    return midpoint(current, next)
-  }
-
-  const start = entryPoint(0)
-  context.moveTo(start.x + offset.x, start.y + offset.y)
+  const mx = (polygon[n - 1].x + polygon[0].x) / 2 + offset.x
+  const my = (polygon[n - 1].y + polygon[0].y) / 2 + offset.y
+  context.moveTo(mx, my)
 
   for (let i = 0; i < n; i++) {
     const cp = polygon[i]
-    const entry = entryPoint(i)
-    const exit = exitPoint(i)
-
-    context.lineTo(entry.x + offset.x, entry.y + offset.y)
-
-    if (sharpVertices[i]) {
-      continue
-    }
-
+    const next = polygon[(i + 1) % n]
     context.quadraticCurveTo(
       cp.x + offset.x,
       cp.y + offset.y,
-      exit.x + offset.x,
-      exit.y + offset.y,
+      (cp.x + next.x) / 2 + offset.x,
+      (cp.y + next.y) / 2 + offset.y,
     )
   }
 
   context.closePath()
 }
 
-const midpoint = (a: Point, b: Point): Point => ({
-  x: (a.x + b.x) / 2,
-  y: (a.y + b.y) / 2,
-})
+const drawClippedShape = (
+  context: CanvasRenderingContext2D,
+  polygon: Polygon,
+  fill: string,
+  offset: Point,
+  style: ShapeRenderStyle = 'smooth',
+  line: SliceLine,
+  side: number,
+) => {
+  context.save()
+  traceHalfPlane(context, line, offset, side)
+  context.clip()
+  drawShape(context, polygon, fill, offset, style)
+  context.restore()
+}
 
-const isPointOnLine = (point: Point, line?: SliceLine | null) => {
-  if (!line) return false
+const sideForPolygon = (polygon: Polygon, line: SliceLine) => {
+  const centerSide = sideOfLine(line, polygonCentroid(polygon))
+  if (Math.abs(centerSide) > 0.0001) return Math.sign(centerSide)
 
-  const lineLength = distance(line.start, line.end)
-  return Math.abs(sideOfLine(line, point)) <= lineLength * SHARP_LINE_DISTANCE_TOLERANCE
+  const pointSide = polygon.find((point) => Math.abs(sideOfLine(line, point)) > 0.0001)
+  return pointSide ? Math.sign(sideOfLine(line, pointSide)) : 1
+}
+
+const traceHalfPlane = (
+  context: CanvasRenderingContext2D,
+  line: SliceLine,
+  offset: Point,
+  side: number,
+) => {
+  const direction = normalize({ x: line.end.x - line.start.x, y: line.end.y - line.start.y })
+  const normal = scale({ x: -direction.y, y: direction.x }, side * CLIP_DISTANCE)
+  const start = addOffset(line.start, offset)
+  const end = addOffset(line.end, offset)
+  const before = scale(direction, -CLIP_DISTANCE)
+  const after = scale(direction, CLIP_DISTANCE)
+
+  const a = addOffset(start, before)
+  const b = addOffset(end, after)
+  const c = addOffset(addOffset(end, after), normal)
+  const d = addOffset(addOffset(start, before), normal)
+
+  context.beginPath()
+  context.moveTo(a.x, a.y)
+  context.lineTo(b.x, b.y)
+  context.lineTo(c.x, c.y)
+  context.lineTo(d.x, d.y)
+  context.closePath()
+}
+
+const addOffset = (point: Point, offset: Point): Point => {
+  return {
+    x: point.x + offset.x,
+    y: point.y + offset.y,
+  }
 }
 
 const traceSharpPath = (context: CanvasRenderingContext2D, polygon: Polygon, offset: Point) => {
@@ -202,7 +233,6 @@ const drawShape = (
   fill: string,
   offset: Point,
   style: ShapeRenderStyle = 'smooth',
-  sharpLine?: SliceLine | null,
 ) => {
   if (polygon.length === 0) return
 
@@ -213,7 +243,7 @@ const drawShape = (
   if (style === 'sharp') {
     traceSharpPath(context, polygon, offset)
   } else {
-    tracePath(context, polygon, offset, sharpLine)
+    tracePath(context, polygon, offset)
   }
   context.fillStyle = fill
   context.fill()
