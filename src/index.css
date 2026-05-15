@@ -36,32 +36,47 @@ button {
   align-items: center;
 }
 
+.brand-header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.brand-mark {
+  width: clamp(42px, 10vw, 58px);
+  height: clamp(42px, 10vw, 58px);
+  filter: drop-shadow(0 0 22px rgba(232, 255, 71, 0.18));
+}
+
 h1 {
   margin: 0;
   font-family: 'Bebas Neue', Impact, sans-serif;
   font-size: clamp(56px, 14vw, 84px);
-  letter-spacing: 18px;
+  letter-spacing: clamp(10px, 4vw, 18px);
   line-height: 1;
   text-align: center;
   color: #fff;
   text-shadow: 0 0 80px rgba(232, 255, 71, 0.15);
-  margin-right: -18px;
+  margin-right: clamp(-18px, -4vw, -10px);
 }
 
 .subtitle {
   margin: 0;
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 6px;
-  color: #2a2a2a;
+  color: #9a9a9a;
   text-transform: uppercase;
   text-align: center;
 }
 
 .shape-tag {
   margin: 14px 0 20px;
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 5px;
-  color: #2a2a2a;
+  color: #9a9a9a;
   text-transform: uppercase;
   text-align: center;
 }
@@ -71,6 +86,17 @@ h1 {
   width: min(88vw, 420px);
   aspect-ratio: 1 / 1;
   flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .app-shell {
+    width: min(840px, 100%);
+    padding: 32px 24px;
+  }
+
+  .game-area {
+    width: min(72vmin, 680px);
+  }
 }
 
 .game-canvas {
@@ -86,9 +112,9 @@ h1 {
   bottom: -28px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 3px;
-  color: #2a2a2a;
+  color: #a8a8a8;
   white-space: nowrap;
 }
 
@@ -104,13 +130,9 @@ h1 {
   letter-spacing: 8px;
   margin-bottom: 18px;
   margin-right: -8px;
+  color: var(--accent-color);
+  text-shadow: 0 0 28px var(--accent-glow);
 }
-
-.grade-perfect { color: #00FF87; text-shadow: 0 0 28px rgba(0, 255, 135, 0.27); }
-.grade-close { color: #E8FF47; text-shadow: 0 0 28px rgba(232, 255, 71, 0.27); }
-.grade-clean { color: #FFB347; text-shadow: 0 0 28px rgba(255, 179, 71, 0.27); }
-.grade-ok { color: #FF8C42; text-shadow: 0 0 28px rgba(255, 140, 66, 0.27); }
-.grade-miss { color: #FF3D71; text-shadow: 0 0 28px rgba(255, 61, 113, 0.27); }
 
 .split-display {
   display: flex;
@@ -140,9 +162,9 @@ h1 {
 }
 
 .piece-label {
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 3px;
-  color: #383838;
+  color: #a0a0a0;
 }
 
 .split-divider {
@@ -159,9 +181,9 @@ h1 {
 }
 
 .split-divider .vs {
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 2px;
-  color: #333;
+  color: #9a9a9a;
 }
 
 .split-bar {
@@ -180,6 +202,7 @@ h1 {
   top: 0;
   height: 100%;
   border-radius: 3px;
+  background: var(--accent-color);
   transition: width 1s cubic-bezier(0.22, 1, 0.36, 1) 0.1s;
 }
 
@@ -194,33 +217,36 @@ h1 {
 }
 
 .off-by {
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 3px;
-  color: #333;
+  color: #a8a8a8;
   margin-bottom: 26px;
 }
 
 .btn-next {
-  background: transparent;
-  border: 1px solid #2c2c2c;
-  color: #777;
-  padding: 11px 28px;
+  background: var(--accent-color);
+  border: 1px solid var(--accent-color);
+  border-radius: 999px;
+  color: #090909;
+  padding: 13px 46px;
   letter-spacing: 4px;
-  font-size: 11px;
+  font-size: 28px;
   cursor: pointer;
-  font-family: 'DM Mono', monospace;
+  font-family: 'Bebas Neue', Impact, sans-serif;
   text-transform: uppercase;
-  transition: border-color 0.2s, color 0.2s;
+  box-shadow: 0 0 28px var(--accent-glow);
+  transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
 }
 
 .btn-next:hover {
-  border-color: #E8FF47;
-  color: #E8FF47;
+  filter: brightness(1.08);
+  box-shadow: 0 0 36px var(--accent-glow);
+  transform: translateY(-1px);
 }
 
 .stats-bar {
   display: flex;
-  gap: 32px;
+  gap: clamp(24px, 7vw, 42px);
   margin-top: 28px;
   justify-content: center;
   animation: fadeUp 0.4s ease both;
@@ -232,16 +258,16 @@ h1 {
 
 .stats-bar .stat-value {
   font-family: 'Bebas Neue', Impact, sans-serif;
-  font-size: 22px;
+  font-size: 28px;
   color: #fff;
   line-height: 1;
 }
 
 .stats-bar .stat-label {
-  font-size: 9px;
-  letter-spacing: 3px;
-  color: #2a2a2a;
-  margin-top: 3px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: #9a9a9a;
+  margin-top: 5px;
 }
 
 .glow-bg {

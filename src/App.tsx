@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
 import { playSlice, playMiss } from './game/audio'
 import { distance, splitPolygon } from './game/geometry'
 import { createParticles, drawGame } from './game/render'
@@ -19,20 +19,9 @@ const readStoredNumber = (key: string) => {
   return Number.isFinite(value) ? value : 0
 }
 
-const gradeClass = (accuracy: number) => {
-  if (accuracy >= 99) return 'grade-perfect'
-  if (accuracy >= 95) return 'grade-close'
-  if (accuracy >= 85) return 'grade-clean'
-  if (accuracy >= 70) return 'grade-ok'
-  return 'grade-miss'
-}
-
-const gradeColor = (accuracy: number) => {
-  if (accuracy >= 99) return '#00FF87'
-  if (accuracy >= 95) return '#E8FF47'
-  if (accuracy >= 85) return '#FFB347'
-  if (accuracy >= 70) return '#FF8C42'
-  return '#FF3D71'
+type AccentStyle = CSSProperties & {
+  '--accent-color': string
+  '--accent-glow': string
 }
 
 function App() {
@@ -57,7 +46,8 @@ function App() {
     drawGame(context, {
       shape: shape.polygon,
       shapeColor: shape.color,
-      dragLine,
+      shapeStyle: shape.renderStyle,
+      dragLine: result?.line ?? dragLine,
       result: result?.slice ?? null,
       progress: animationProgress,
       particles,
@@ -164,13 +154,19 @@ function App() {
     accuracyHistory.length > 0
       ? (accuracyHistory.reduce((a, b) => a + b, 0) / accuracyHistory.length).toFixed(1)
       : null
+  const accentStyle: AccentStyle = {
+    '--accent-color': shape.color,
+    '--accent-glow': hexToRgba(shape.color, 0.28),
+  }
 
   return (
-    <main className="app-shell">
+    <main className="app-shell" style={accentStyle}>
       <div className="glow-bg" />
 
-      <h1>SLICE</h1>
-      <p className="subtitle">SPLIT IT PERFECTLY IN HALF</p>
+      <header className="brand-header" aria-label="SLICE">
+        <img className="brand-mark" src="/logo.svg" alt="" aria-hidden="true" />
+        <h1>SLICE</h1>
+      </header>
 
       <div className="game-area">
         <canvas
@@ -191,9 +187,7 @@ function App() {
 
       {phase === 'result' && result && (
         <div className="score-panel">
-          <div className={`grade-label ${gradeClass(result.score.accuracy)}`}>
-            {result.score.label}
-          </div>
+          <div className="grade-label">{result.score.label}</div>
 
           <div className="split-display">
             <div className="piece">
@@ -216,7 +210,6 @@ function App() {
               className="split-bar-fill"
               style={{
                 width: barAnimated ? `${balance}%` : '0%',
-                background: gradeColor(result.score.accuracy),
               }}
             />
             <div className="split-bar-marker" />
@@ -224,7 +217,7 @@ function App() {
           <div className="off-by">off by {offBy}%</div>
 
           <button className="btn-next" type="button" onClick={startNextRound}>
-            NEXT SHAPE →
+            Next Shape
           </button>
         </div>
       )}
@@ -259,6 +252,14 @@ const toCanvasPoint = (event: PointerEvent<HTMLCanvasElement>): Point => {
     x: ((event.clientX - rect.left) / rect.width) * CANVAS_SIZE,
     y: ((event.clientY - rect.top) / rect.height) * CANVAS_SIZE,
   }
+}
+
+const hexToRgba = (hex: string, alpha: number) => {
+  const normalized = hex.replace('#', '')
+  const r = parseInt(normalized.slice(0, 2), 16)
+  const g = parseInt(normalized.slice(2, 4), 16)
+  const b = parseInt(normalized.slice(4, 6), 16)
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
 }
 
 export default App
