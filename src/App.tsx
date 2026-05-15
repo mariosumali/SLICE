@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
-import { playSlice, playMiss } from './game/audio'
+import { playSlice, playMiss, unlockAudio } from './game/audio'
 import { distance, splitPolygon } from './game/geometry'
 import { createParticles, drawGame } from './game/render'
 import { scoreSlice, getNextLevel, isStreakSlice } from './game/scoring'
@@ -79,6 +79,8 @@ function App() {
 
   const handlePointerDown = (event: PointerEvent<HTMLCanvasElement>) => {
     if (phase === 'result') return
+
+    unlockAudio()
 
     const point = toCanvasPoint(event)
     event.currentTarget.setPointerCapture(event.pointerId)
