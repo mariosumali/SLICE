@@ -1,11 +1,13 @@
-import { distance, normalize, polygonCentroid, scale } from './geometry'
-import type { Particle, Point, Polygon, SliceLine, SliceResult } from './types'
+import { distance, normalize, polygonCentroid, scale, sideOfLine } from './geometry'
+import type { Particle, Point, Polygon, ShapeRenderStyle, SliceLine, SliceResult } from './types'
 
 const CANVAS_SIZE = 500
+const SHARP_LINE_DISTANCE_TOLERANCE = 0.25
 
 type DrawOptions = {
   shape: Polygon
   shapeColor: string
+  shapeStyle?: ShapeRenderStyle
   dragLine: SliceLine | null
   result: SliceResult | null
   progress: number
@@ -19,7 +21,7 @@ export const drawGame = (context: CanvasRenderingContext2D, options: DrawOptions
   if (options.result) {
     drawSplitResult(context, options)
   } else {
-    drawShape(context, options.shape, options.shapeColor, { x: 0, y: 0 })
+    drawShape(context, options.shape, options.shapeColor, { x: 0, y: 0 }, options.shapeStyle)
   }
 
   if (options.dragLine) {
@@ -110,32 +112,85 @@ const drawSplitResult = (context: CanvasRenderingContext2D, options: DrawOptions
       : { x: 1, y: 0 }
     const offsetDirection = distance(direction, { x: 0, y: 0 }) > 0 ? direction : fallback
     const offset = scale(offsetDirection, 30 * eased)
-    drawShape(context, polygon, fill, offset)
+    drawShape(context, polygon, fill, offset, options.shapeStyle, options.dragLine)
   }
 
   drawHalf(options.result.left, options.shapeColor)
   drawHalf(options.result.right, options.shapeColor)
 }
 
-const tracePath = (context: CanvasRenderingContext2D, polygon: Polygon, offset: Point) => {
+const tracePath = (
+  context: CanvasRenderingContext2D,
+  polygon: Polygon,
+  offset: Point,
+  sharpLine?: SliceLine | null,
+) => {
   if (polygon.length < 3) return
 
   const n = polygon.length
   context.beginPath()
 
-  const mx = (polygon[n - 1].x + polygon[0].x) / 2 + offset.x
-  const my = (polygon[n - 1].y + polygon[0].y) / 2 + offset.y
-  context.moveTo(mx, my)
+  const sharpVertices = polygon.map((point) => isPointOnLine(point, sharpLine))
+  const entryPoint = (index: number) => {
+    const current = polygon[index]
+    if (sharpVertices[index]) return current
+
+    const previous = polygon[(index - 1 + n) % n]
+    return midpoint(previous, current)
+  }
+  const exitPoint = (index: number) => {
+    const current = polygon[index]
+    if (sharpVertices[index]) return current
+
+    const next = polygon[(index + 1) % n]
+    return midpoint(current, next)
+  }
+
+  const start = entryPoint(0)
+  context.moveTo(start.x + offset.x, start.y + offset.y)
 
   for (let i = 0; i < n; i++) {
     const cp = polygon[i]
-    const next = polygon[(i + 1) % n]
+    const entry = entryPoint(i)
+    const exit = exitPoint(i)
+
+    context.lineTo(entry.x + offset.x, entry.y + offset.y)
+
+    if (sharpVertices[i]) {
+      continue
+    }
+
     context.quadraticCurveTo(
       cp.x + offset.x,
       cp.y + offset.y,
-      (cp.x + next.x) / 2 + offset.x,
-      (cp.y + next.y) / 2 + offset.y,
+      exit.x + offset.x,
+      exit.y + offset.y,
     )
+  }
+
+  context.closePath()
+}
+
+const midpoint = (a: Point, b: Point): Point => ({
+  x: (a.x + b.x) / 2,
+  y: (a.y + b.y) / 2,
+})
+
+const isPointOnLine = (point: Point, line?: SliceLine | null) => {
+  if (!line) return false
+
+  const lineLength = distance(line.start, line.end)
+  return Math.abs(sideOfLine(line, point)) <= lineLength * SHARP_LINE_DISTANCE_TOLERANCE
+}
+
+const traceSharpPath = (context: CanvasRenderingContext2D, polygon: Polygon, offset: Point) => {
+  if (polygon.length < 3) return
+
+  context.beginPath()
+  context.moveTo(polygon[0].x + offset.x, polygon[0].y + offset.y)
+
+  for (let i = 1; i < polygon.length; i++) {
+    context.lineTo(polygon[i].x + offset.x, polygon[i].y + offset.y)
   }
 
   context.closePath()
@@ -146,6 +201,8 @@ const drawShape = (
   polygon: Polygon,
   fill: string,
   offset: Point,
+  style: ShapeRenderStyle = 'smooth',
+  sharpLine?: SliceLine | null,
 ) => {
   if (polygon.length === 0) return
 
@@ -153,7 +210,11 @@ const drawShape = (
   context.shadowColor = 'rgba(0, 0, 0, 0.7)'
   context.shadowBlur = 24
   context.shadowOffsetY = 8
-  tracePath(context, polygon, offset)
+  if (style === 'sharp') {
+    traceSharpPath(context, polygon, offset)
+  } else {
+    tracePath(context, polygon, offset, sharpLine)
+  }
   context.fillStyle = fill
   context.fill()
   context.restore()

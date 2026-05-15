@@ -5,10 +5,13 @@ export type Point = {
 
 export type Polygon = Point[]
 
+export type ShapeRenderStyle = 'smooth' | 'sharp'
+
 export type ShapeInfo = {
   name: string
   polygon: Polygon
   color: string
+  renderStyle?: ShapeRenderStyle
 }
 
 export type SliceLine = {
