@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
+import { playSlice, playMiss } from './game/audio'
 import { distance, splitPolygon } from './game/geometry'
 import { createParticles, drawGame } from './game/render'
 import { scoreSlice, getNextLevel, isStreakSlice } from './game/scoring'
-import { createSeed, createShape, WORLD_HEIGHT, WORLD_WIDTH } from './game/shapes'
-import type { Particle, Point, Polygon, ScoreResult, SliceLine, SliceResult } from './game/types'
+import { createSeed, createShape, CANVAS_SIZE } from './game/shapes'
+import type { Particle, Point, ScoreResult, ShapeInfo, SliceLine, SliceResult } from './game/types'
 
 type Phase = 'ready' | 'dragging' | 'result'
 
@@ -18,28 +19,44 @@ const readStoredNumber = (key: string) => {
   return Number.isFinite(value) ? value : 0
 }
 
+const gradeClass = (accuracy: number) => {
+  if (accuracy >= 99) return 'grade-perfect'
+  if (accuracy >= 95) return 'grade-close'
+  if (accuracy >= 85) return 'grade-clean'
+  if (accuracy >= 70) return 'grade-ok'
+  return 'grade-miss'
+}
+
+const gradeColor = (accuracy: number) => {
+  if (accuracy >= 99) return '#00FF87'
+  if (accuracy >= 95) return '#E8FF47'
+  if (accuracy >= 85) return '#FFB347'
+  if (accuracy >= 70) return '#FF8C42'
+  return '#FF3D71'
+}
+
 function App() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const [round, setRound] = useState(1)
-  const [level, setLevel] = useState(1)
-  const [shape, setShape] = useState<Polygon>(() => createShape(1, createSeed(1, 1)))
+  const [shape, setShape] = useState<ShapeInfo>(() => createShape(1, createSeed(1, 1)))
   const [phase, setPhase] = useState<Phase>('ready')
   const [dragLine, setDragLine] = useState<SliceLine | null>(null)
   const [result, setResult] = useState<RoundResult | null>(null)
   const [particles, setParticles] = useState<Particle[]>([])
   const [animationProgress, setAnimationProgress] = useState(0)
   const [streak, setStreak] = useState(0)
-  const [totalScore, setTotalScore] = useState(0)
   const [bestAccuracy, setBestAccuracy] = useState(() => readStoredNumber('slice-best-accuracy'))
   const [bestStreak, setBestStreak] = useState(() => readStoredNumber('slice-best-streak'))
-  const [hint, setHint] = useState('Drag across the shape to slice it into 50/50.')
+  const [barAnimated, setBarAnimated] = useState(false)
+  const [accuracyHistory, setAccuracyHistory] = useState<number[]>([])
 
   useEffect(() => {
     const context = canvasRef.current?.getContext('2d')
     if (!context) return
 
     drawGame(context, {
-      shape,
+      shape: shape.polygon,
+      shapeColor: shape.color,
       dragLine,
       result: result?.slice ?? null,
       progress: animationProgress,
@@ -62,7 +79,12 @@ function App() {
     }
 
     frameId = window.requestAnimationFrame(tick)
-    return () => window.cancelAnimationFrame(frameId)
+    const barTimer = setTimeout(() => setBarAnimated(true), 100)
+
+    return () => {
+      window.cancelAnimationFrame(frameId)
+      clearTimeout(barTimer)
+    }
   }, [result])
 
   const handlePointerDown = (event: PointerEvent<HTMLCanvasElement>) => {
@@ -72,38 +94,34 @@ function App() {
     event.currentTarget.setPointerCapture(event.pointerId)
     setPhase('dragging')
     setDragLine({ start: point, end: point })
-    setHint('Release to cut the shape.')
   }
 
   const handlePointerMove = (event: PointerEvent<HTMLCanvasElement>) => {
     if (phase !== 'dragging' || !dragLine) return
-
-    setDragLine({
-      start: dragLine.start,
-      end: toCanvasPoint(event),
-    })
+    setDragLine({ start: dragLine.start, end: toCanvasPoint(event) })
   }
 
   const handlePointerUp = (event: PointerEvent<HTMLCanvasElement>) => {
     if (phase !== 'dragging' || !dragLine) return
 
-    const line = {
-      start: dragLine.start,
-      end: toCanvasPoint(event),
-    }
+    const line = { start: dragLine.start, end: toCanvasPoint(event) }
 
-    if (distance(line.start, line.end) < 24) {
-      resetDrag('Make a longer slice across the shape.')
+    if (distance(line.start, line.end) < 18) {
+      playMiss()
+      resetDrag()
       return
     }
 
-    const slice = splitPolygon(shape, line)
+    const slice = splitPolygon(shape.polygon, line)
     if (!slice) {
-      resetDrag('The line needs to cross through the whole shape.')
+      playMiss()
+      resetDrag()
       return
     }
 
     const score = scoreSlice(slice.leftArea, slice.rightArea)
+    playSlice(score.accuracy)
+
     const nextStreak = isStreakSlice(score.accuracy) ? streak + 1 : 0
     const nextBestAccuracy = Math.max(bestAccuracy, score.accuracy)
     const nextBestStreak = Math.max(bestStreak, nextStreak)
@@ -115,119 +133,131 @@ function App() {
     setResult({ slice, score, line })
     setParticles(score.accuracy >= 85 ? createParticles(line) : [])
     setAnimationProgress(0)
+    setBarAnimated(false)
     setStreak(nextStreak)
-    setTotalScore((current) => current + score.points)
     setBestAccuracy(nextBestAccuracy)
     setBestStreak(nextBestStreak)
-    setHint(`${score.label}: ${score.balance.toFixed(1)} / ${(100 - score.balance).toFixed(1)} by mass.`)
+    setAccuracyHistory((prev) => [...prev, score.accuracy])
   }
 
   const startNextRound = () => {
     const nextRound = round + 1
     const nextLevel = getNextLevel(nextRound, streak)
-
     setRound(nextRound)
-    setLevel(nextLevel)
     setShape(createShape(nextLevel, createSeed(nextRound, nextLevel)))
     setPhase('ready')
     setDragLine(null)
     setResult(null)
     setParticles([])
     setAnimationProgress(0)
-    setHint('Drag across the shape to slice it into 50/50.')
+    setBarAnimated(false)
   }
 
-  const resetGame = () => {
-    const freshLevel = 1
-    const freshRound = 1
-    setRound(freshRound)
-    setLevel(freshLevel)
-    setShape(createShape(freshLevel, createSeed(freshRound, freshLevel)))
+  const resetDrag = () => {
     setPhase('ready')
     setDragLine(null)
-    setResult(null)
-    setParticles([])
-    setAnimationProgress(0)
-    setStreak(0)
-    setTotalScore(0)
-    setHint('Drag across the shape to slice it into 50/50.')
   }
 
-  const resetDrag = (message: string) => {
-    setPhase('ready')
-    setDragLine(null)
-    setHint(message)
-  }
-
-  const latestAccuracy = result ? `${result.score.accuracy.toFixed(1)}%` : '--'
+  const balance = result?.score.balance ?? 0
+  const offBy = result ? Math.abs(result.score.balance - 50).toFixed(1) : null
+  const avgAccuracy =
+    accuracyHistory.length > 0
+      ? (accuracyHistory.reduce((a, b) => a + b, 0) / accuracyHistory.length).toFixed(1)
+      : null
 
   return (
     <main className="app-shell">
-      <section className="hero-panel" aria-labelledby="game-title">
-        <div>
-          <p className="eyebrow">mass matters</p>
-          <h1 id="game-title">SLICE</h1>
-          <p className="intro">Cut the shape into two perfect halves. The closer to 50/50, the hotter your streak gets.</p>
-        </div>
-        <button className="ghost-button" type="button" onClick={resetGame}>
-          Reset run
-        </button>
-      </section>
+      <div className="glow-bg" />
 
-      <section className="stats-grid" aria-label="Run stats">
-        <Stat label="Level" value={level} />
-        <Stat label="Round" value={round} />
-        <Stat label="Streak" value={streak} />
-        <Stat label="Score" value={totalScore} />
-        <Stat label="Last cut" value={latestAccuracy} />
-        <Stat label="Best" value={bestAccuracy ? `${bestAccuracy.toFixed(1)}%` : '--'} />
-      </section>
+      <h1>SLICE</h1>
+      <p className="subtitle">SPLIT IT PERFECTLY IN HALF</p>
 
-      <section className="game-card">
+      <div className="game-area">
         <canvas
           ref={canvasRef}
           className="game-canvas"
-          width={WORLD_WIDTH}
-          height={WORLD_HEIGHT}
+          width={CANVAS_SIZE}
+          height={CANVAS_SIZE}
           aria-label="SLICE game board"
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
-          onPointerCancel={() => resetDrag('Slice cancelled. Try again.')}
+          onPointerCancel={resetDrag}
         />
+        {phase === 'ready' && (
+          <div className="drag-hint">— drag across to cut —</div>
+        )}
+      </div>
 
-        <div className="game-overlay" aria-live="polite">
-          <p>{hint}</p>
-          {result ? (
-            <div className="result-panel">
-              <strong>{result.score.label}</strong>
-              <span>{result.score.accuracy.toFixed(1)}% accuracy</span>
-              <button type="button" onClick={startNextRound}>
-                Next shape
-              </button>
+      {phase === 'result' && result && (
+        <div className="score-panel">
+          <div className={`grade-label ${gradeClass(result.score.accuracy)}`}>
+            {result.score.label}
+          </div>
+
+          <div className="split-display">
+            <div className="piece">
+              <div className="split-number">{balance.toFixed(1)}%</div>
+              <div className="piece-label">PIECE A</div>
             </div>
-          ) : null}
-        </div>
-      </section>
+            <div className="split-divider">
+              <div className="line" />
+              <div className="vs">vs</div>
+              <div className="line" />
+            </div>
+            <div className="piece">
+              <div className="split-number">{(100 - balance).toFixed(1)}%</div>
+              <div className="piece-label">PIECE B</div>
+            </div>
+          </div>
 
-      <footer className="footer-note">Best streak: {bestStreak}. Touch and mouse both work.</footer>
+          <div className="split-bar">
+            <div
+              className="split-bar-fill"
+              style={{
+                width: barAnimated ? `${balance}%` : '0%',
+                background: gradeColor(result.score.accuracy),
+              }}
+            />
+            <div className="split-bar-marker" />
+          </div>
+          <div className="off-by">off by {offBy}%</div>
+
+          <button className="btn-next" type="button" onClick={startNextRound}>
+            NEXT SHAPE →
+          </button>
+        </div>
+      )}
+
+      {accuracyHistory.length > 0 && phase !== 'dragging' && (
+        <div className="stats-bar">
+          <div className="stat">
+            <div className="stat-value">{accuracyHistory.length}</div>
+            <div className="stat-label">PLAYED</div>
+          </div>
+          <div className="stat">
+            <div className="stat-value">{avgAccuracy}%</div>
+            <div className="stat-label">AVG</div>
+          </div>
+          <div className="stat">
+            <div className="stat-value">{streak}</div>
+            <div className="stat-label">STREAK</div>
+          </div>
+          <div className="stat">
+            <div className="stat-value">{bestStreak}</div>
+            <div className="stat-label">BEST</div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }
 
-const Stat = ({ label, value }: { label: string; value: string | number }) => (
-  <article className="stat-card">
-    <span>{label}</span>
-    <strong>{value}</strong>
-  </article>
-)
-
 const toCanvasPoint = (event: PointerEvent<HTMLCanvasElement>): Point => {
   const rect = event.currentTarget.getBoundingClientRect()
-
   return {
-    x: ((event.clientX - rect.left) / rect.width) * WORLD_WIDTH,
-    y: ((event.clientY - rect.top) / rect.height) * WORLD_HEIGHT,
+    x: ((event.clientX - rect.left) / rect.width) * CANVAS_SIZE,
+    y: ((event.clientY - rect.top) / rect.height) * CANVAS_SIZE,
   }
 }
 
