@@ -271,7 +271,23 @@ h1 {
 }
 
 @media (max-width: 600px) {
+  html,
+  body,
+  #root {
+    height: 100svh;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  body {
+    position: fixed;
+    width: 100%;
+  }
+
   .app-shell {
+    height: 100svh;
+    min-height: 100svh;
+    overflow: hidden;
     padding: 14px 16px 10px;
   }
 
@@ -289,14 +305,19 @@ h1 {
     letter-spacing: clamp(8px, 3vw, 12px);
   }
 
+  .game-area {
+    width: min(86vw, 410px);
+    margin-bottom: 18px;
+  }
+
   .drag-hint {
-    bottom: -20px;
-    font-size: 10px;
-    letter-spacing: 2px;
+    bottom: -24px;
+    font-size: 11px;
+    letter-spacing: 2.4px;
   }
 
   .score-panel {
-    margin-top: 16px;
+    margin-top: 18px;
   }
 
   .grade-label {
@@ -347,16 +368,18 @@ h1 {
   }
 
   .stats-bar {
-    gap: clamp(16px, 5vw, 26px);
-    margin-top: 12px;
+    width: 100%;
+    gap: clamp(20px, 6vw, 32px);
+    margin-top: 18px;
+    padding-bottom: 4px;
   }
 
   .stats-bar .stat-value {
-    font-size: 20px;
+    font-size: 24px;
   }
 
   .stats-bar .stat-label {
-    margin-top: 3px;
+    margin-top: 5px;
   }
 }
 
