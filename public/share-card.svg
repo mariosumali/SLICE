@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">SLICE share card</title>
+  <desc id="desc">SLICE wordmark with a scissors mark on a cream background.</desc>
+  <rect width="1200" height="630" fill="#f7f7f2"/>
+  <text x="80" y="382" fill="#0a0a0a" font-family="Impact, 'Bebas Neue', sans-serif" font-size="190" letter-spacing="32">SLICE</text>
+  <g transform="translate(760 89) scale(.88)">
+    <g fill="none" stroke="#0a0a0a" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="144" cy="144" r="62" stroke-width="52"/>
+      <circle cx="144" cy="368" r="62" stroke-width="52"/>
+      <path stroke-width="54" d="m200 224 216-120M200 288l216 120M184 254l-60-62M184 258l-60 62"/>
+    </g>
+  </g>
+</svg>

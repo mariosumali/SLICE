@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">SLICE logo</title>
+  <desc id="desc">A simple scissors mark.</desc>
+  <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="144" cy="144" r="62" stroke-width="52"/>
+    <circle cx="144" cy="368" r="62" stroke-width="52"/>
+    <path stroke-width="54" d="m200 224 216-120M200 288l216 120M184 254l-60-62M184 258l-60 62"/>
+  </g>
+</svg>
