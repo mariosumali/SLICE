@@ -1,26 +1,53 @@
 # SLICE
 
-> **Draw one line. Split the shape. Pray you didn’t lob off 73% like a barbarian.**
-
-**SLICE** is a neon-soaked precision puzzle for anyone who trusts their gut more than geometry homework. You get a weird 2D thing on screen. You drag a laser-straight slice through it. Release — and the game tells you how close your two halves are to **50/50 by area**.
-
-No calculators. No protractor. Just vibes, spatial intuition, and the slow realization that you are *not* as balanced as you thought.
-
-## How it plays (the fun part)
-
-1. A shape appears. It might be polite (a hexagon) or chaos (something that looks like a melted Pac-Man).
-2. Click or drag a cut across the shape. The line is infinite in your mind; only what hits the polygon counts.
-3. The two pieces drift apart like they’re mad at each other.
-4. You get a ratio, a grade, and — if the universe likes you — a little hit of *PERFECT* energy.
-
-Miss the shape entirely? It flashes **nope** and you get another shot. The shape is judgy, not cruel.
-
-## Grades (so you know what to brag about)
-
-Roughly speaking: nail **≥49.5%** on the smaller side and you’ve earned **PERFECT** bragging rights. Drift downward through **CLEAN**, **SHARP**, **NOT BAD**, until you hit **MISS** — which we call “creative interpretation of halves.”
-
-Streaks, daily challenges, share cards — the works. Chop first, apologize to Euclid later.
+Browser puzzle game: **one straight cut** through a 2D polygon. The goal is to divide **total area as close to 50 / 50 as possible**. You get immediate numeric feedback, a visual split bar, graded performance labels, and persistent session stats.
 
 ---
 
-*SLICE — where “close enough” is never close enough.*
+## Screenshots
+
+| Ready to cut | Result & stats |
+| :---: | :---: |
+| ![Shape on the board with cut hint](docs/screenshots/01-ready.png) | ![Split ratio, grade, bar, and streak stats](docs/screenshots/02-result.png) |
+
+---
+
+## Core features
+
+### Slicing & feedback
+
+- **Pointer / touch input:** click–drag (or touch–drag) across the canvas; release to commit the cut. Drags shorter than the minimum length are ignored with a miss cue.
+- **Real polygon clipping:** the cut line is applied to the actual shape geometry; invalid or non-intersecting cuts are rejected.
+- **Result animation:** halves separate with motion; **particle burst** on strong scores (high accuracy band).
+- **Audio:** distinct **slice** and **miss** sounds.
+
+### Scoring & grading
+
+- **Area balance:** displays both sides as percentages (e.g. `47.3%` vs `52.7%`) derived from the smaller area ÷ total × 100.
+- **Accuracy metric:** `100 − 2 × |50 − balance|` (0–100).
+- **Grade labels** (by accuracy): Perfect Slice · So Close · Clean Cut · Not Bad · Try Again.
+- **Split bar:** animated fill plus a **50% marker** and an **“off by X%”** readout.
+
+### Progression & difficulty
+
+- **Endless rounds** with **Next Shape** to advance.
+- **Adaptive level:** difficulty index scales with **round number** and **streak** so shape complexity trends harder over a good run.
+- **Streak rule:** consecutive qualifying slices (accuracy **≥ 92**) extend the streak; weaker slices reset it.
+
+### Shape content
+
+- **Template library:** pixel-grid and path-based silhouettes (characters, objects, icons) with readable names.
+- **Concave presets:** notched and bent outlines for trickier cuts.
+- **Procedural blobs:** multi-lobe smoothed contours for irregular targets.
+- **Per-shape styling:** color picked from a fixed palette plus alternate **fill / outline render styles**.
+
+### Persistence & hud
+
+- **Session stats strip** after rounds: rounds played, **running average accuracy**, current **streak**, **best streak**.
+- **localStorage:** remembers **best accuracy** and **best streak** across visits.
+
+---
+
+## Technical stack
+
+**React**, **TypeScript**, **Vite** — canvas 2D for rendering and interaction.
