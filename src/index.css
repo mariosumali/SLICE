@@ -270,6 +270,96 @@ h1 {
   margin-top: 5px;
 }
 
+@media (max-width: 600px) {
+  .app-shell {
+    padding: 14px 16px 10px;
+  }
+
+  .brand-header {
+    gap: 10px;
+  }
+
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+  }
+
+  h1 {
+    font-size: clamp(46px, 12vw, 56px);
+    letter-spacing: clamp(8px, 3vw, 12px);
+  }
+
+  .drag-hint {
+    bottom: -20px;
+    font-size: 10px;
+    letter-spacing: 2px;
+  }
+
+  .score-panel {
+    margin-top: 16px;
+  }
+
+  .grade-label {
+    font-size: clamp(24px, 6.2vw, 30px);
+    letter-spacing: 6px;
+    margin-bottom: 8px;
+  }
+
+  .split-display {
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+
+  .split-number {
+    font-size: clamp(34px, 9vw, 44px);
+  }
+
+  .piece-label,
+  .split-divider .vs,
+  .off-by,
+  .stats-bar .stat-label {
+    font-size: 9px;
+    letter-spacing: 2px;
+  }
+
+  .split-divider {
+    gap: 3px;
+  }
+
+  .split-divider .line {
+    height: 22px;
+  }
+
+  .split-bar {
+    width: min(230px, 68vw);
+    height: 4px;
+    margin-bottom: 4px;
+  }
+
+  .off-by {
+    margin-bottom: 10px;
+  }
+
+  .btn-next {
+    padding: 8px 34px;
+    font-size: 22px;
+    letter-spacing: 3px;
+  }
+
+  .stats-bar {
+    gap: clamp(16px, 5vw, 26px);
+    margin-top: 12px;
+  }
+
+  .stats-bar .stat-value {
+    font-size: 20px;
+  }
+
+  .stats-bar .stat-label {
+    margin-top: 3px;
+  }
+}
+
 .glow-bg {
   position: fixed;
   width: 500px;
