@@ -1,4 +1,5 @@
 import type { Point, ShapeInfo, ShapeRenderStyle } from './types'
+import { pickImportedFlairAsset, transformFlairPoints } from './flair'
 
 export const CANVAS_SIZE = 500
 
@@ -8,15 +9,20 @@ export const createShape = (level: number, seed: number): ShapeInfo => {
   const cy = CANVAS_SIZE / 2 + (random() - 0.5) * 40
   const baseScale = 130 + Math.min(level, 12) * 6
 
-  const templateChance = 0.48
+  const templateChance = 0.42
+  const silhouetteChance = 0.32
   const concavityChance = Math.min(0.3 + level * 0.035, 0.55) * 0.65
   const shapeRoll = random()
 
-  if (shapeRoll < templateChance) {
+  if (shapeRoll < silhouetteChance) {
+    return createSilhouetteShape(cx, cy, baseScale, random)
+  }
+
+  if (shapeRoll < silhouetteChance + templateChance) {
     return createTemplateShape(cx, cy, baseScale, random)
   }
 
-  if (shapeRoll < templateChance + concavityChance) {
+  if (shapeRoll < silhouetteChance + templateChance + concavityChance) {
     return createConcaveShape(cx, cy, baseScale, random)
   }
 
@@ -343,6 +349,29 @@ const AXIS_SYMMETRY_REDUCTION = 0.5
 const SYMMETRY_EPSILON = 0.001
 const templateSymmetryCache = new WeakMap<ShapeTemplate, boolean>()
 let asymmetricTemplateCache: ShapeTemplate[] | null = null
+
+const createSilhouetteShape = (
+  cx: number,
+  cy: number,
+  baseScale: number,
+  random: () => number,
+): ShapeInfo => {
+  const asset = pickImportedFlairAsset(random)
+  if (!asset) {
+    return createTemplateShape(cx, cy, baseScale, random)
+  }
+
+  const polygon = transformFlairPoints(asset.points, cx, cy, baseScale, random)
+  const color = SHAPE_COLORS[Math.floor(random() * SHAPE_COLORS.length)]
+
+  return {
+    name: asset.name,
+    polygon: fitToCanvas(polygon),
+    color,
+    renderStyle: 'sharp',
+    textureSrc: asset.src,
+  }
+}
 
 const createTemplateShape = (
   cx: number,

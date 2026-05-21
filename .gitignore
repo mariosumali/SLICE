@@ -23,3 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Optional: uncomment if you re-fetch flair often and don't want PNGs in git
+# public/flair/imported/*.png
+# public/flair/imported/sources.json

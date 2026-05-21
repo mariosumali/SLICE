@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "flair:fetch": "node scripts/fetch-flair.mjs",
+    "flair:trace": "node scripts/trace-flair.mjs",
+    "flair:pull": "node scripts/fetch-flair.mjs && node scripts/trace-flair.mjs",
+    "flair:bulk": "node scripts/bulk-flair.mjs --target 150 --focus character_ip"
   },
   "dependencies": {
     "react": "^19.2.6",
@@ -23,6 +27,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
+    "sharp": "^0.34.5",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.12"

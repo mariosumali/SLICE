@@ -12,6 +12,8 @@ export type ShapeInfo = {
   polygon: Polygon
   color: string
   renderStyle?: ShapeRenderStyle
+  /** When set, the full PNG/SVG is drawn on the cut target (alpha preserved). */
+  textureSrc?: string
 }
 
 export type SliceLine = {

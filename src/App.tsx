@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
+import { FlairLayer } from './components/FlairLayer'
 import { playSlice, playMiss, unlockAudio } from './game/audio'
+import { createRoundDecals, FLAIR_SRCS } from './game/flair'
 import { distance, splitPolygon } from './game/geometry'
-import { createParticles, drawGame } from './game/render'
+import { createParticles, drawGame, preloadFlairImages } from './game/render'
 import { scoreSlice, getNextLevel, isStreakSlice } from './game/scoring'
 import { createSeed, createShape, CANVAS_SIZE } from './game/shapes'
 import type { Particle, Point, ScoreResult, ShapeInfo, SliceLine, SliceResult } from './game/types'
@@ -38,6 +40,21 @@ function App() {
   const [bestStreak, setBestStreak] = useState(() => readStoredNumber('slice-best-streak'))
   const [barAnimated, setBarAnimated] = useState(false)
   const [accuracyHistory, setAccuracyHistory] = useState<number[]>([])
+  const decals = useMemo(() => createRoundDecals(createSeed(round, 0)), [round])
+  const [texturesReady, setTexturesReady] = useState(0)
+
+  useEffect(() => {
+    preloadFlairImages(FLAIR_SRCS, () => {
+      setTexturesReady((version) => version + 1)
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!shape.textureSrc) return
+    preloadFlairImages([shape.textureSrc], () => {
+      setTexturesReady((version) => version + 1)
+    })
+  }, [shape.textureSrc])
 
   useEffect(() => {
     const context = canvasRef.current?.getContext('2d')
@@ -47,12 +64,13 @@ function App() {
       shape: shape.polygon,
       shapeColor: shape.color,
       shapeStyle: shape.renderStyle,
+      textureSrc: shape.textureSrc,
       dragLine: result?.line ?? dragLine,
       result: result?.slice ?? null,
       progress: animationProgress,
       particles,
     })
-  }, [animationProgress, dragLine, particles, result, shape])
+  }, [animationProgress, dragLine, particles, result, shape, texturesReady])
 
   useEffect(() => {
     if (!result) return
@@ -163,12 +181,17 @@ function App() {
 
   return (
     <main className="app-shell" style={accentStyle}>
+      <FlairLayer decals={decals} />
       <div className="glow-bg" />
 
       <header className="brand-header" aria-label="SLICE">
         <img className="brand-mark" src="/logo.svg" alt="" aria-hidden="true" />
         <h1>SLICE</h1>
       </header>
+
+      {shape.textureSrc && phase !== 'result' && (
+        <p className="shape-tag">{shape.name}</p>
+      )}
 
       <div className="game-area">
         <canvas

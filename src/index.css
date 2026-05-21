@@ -86,6 +86,7 @@ h1 {
   width: min(88vw, 420px);
   aspect-ratio: 1 / 1;
   flex-shrink: 0;
+  z-index: 1;
 }
 
 @media (min-width: 768px) {
@@ -122,6 +123,8 @@ h1 {
   text-align: center;
   margin-top: 44px;
   animation: fadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.85s both;
+  position: relative;
+  z-index: 1;
 }
 
 .grade-label {
@@ -250,6 +253,8 @@ h1 {
   margin-top: 28px;
   justify-content: center;
   animation: fadeUp 0.4s ease both;
+  position: relative;
+  z-index: 1;
 }
 
 .stats-bar .stat {
@@ -395,6 +400,31 @@ h1 {
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 0;
+}
+
+.flair-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.flair-sticker {
+  position: absolute;
+  width: clamp(52px, 11vw, 92px);
+  height: auto;
+  opacity: var(--flair-opacity, 0.1);
+  transform: translate(-50%, -50%) rotate(var(--flair-rotate, 0deg)) scale(var(--flair-scale, 1));
+  filter: saturate(1.15) brightness(0.95);
+  animation: flairFloat 7s ease-in-out infinite;
+  animation-delay: var(--flair-delay, 0s);
+  user-select: none;
+}
+
+@keyframes flairFloat {
+  0%, 100% { transform: translate(-50%, -50%) rotate(var(--flair-rotate, 0deg)) scale(var(--flair-scale, 1)); }
+  50% { transform: translate(-50%, calc(-50% - 8px)) rotate(calc(var(--flair-rotate, 0deg) + 4deg)) scale(var(--flair-scale, 1)); }
 }
 
 @keyframes fadeUp {

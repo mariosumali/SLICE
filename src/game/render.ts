@@ -8,10 +8,93 @@ type DrawOptions = {
   shape: Polygon
   shapeColor: string
   shapeStyle?: ShapeRenderStyle
+  textureSrc?: string
   dragLine: SliceLine | null
   result: SliceResult | null
   progress: number
   particles: Particle[]
+}
+
+const imageCache = new Map<string, HTMLImageElement>()
+
+export const preloadFlairImages = (sources: string[], onReady?: () => void) => {
+  const uniqueSources = [...new Set(sources)]
+  if (uniqueSources.length === 0) {
+    onReady?.()
+    return
+  }
+
+  let pending = 0
+
+  const markLoaded = () => {
+    pending -= 1
+    if (pending === 0) onReady?.()
+  }
+
+  for (const src of uniqueSources) {
+    const cached = imageCache.get(src)
+    if (cached?.complete && cached.naturalWidth > 0) continue
+
+    pending += 1
+    const image = cached ?? new Image()
+    image.onload = markLoaded
+    image.onerror = markLoaded
+    if (!cached) {
+      imageCache.set(src, image)
+    }
+    image.src = src
+  }
+
+  if (pending === 0) onReady?.()
+}
+
+const getCachedImage = (src: string): HTMLImageElement | undefined => {
+  const cached = imageCache.get(src)
+  if (cached?.complete && cached.naturalWidth > 0) return cached
+  return undefined
+}
+
+const drawTexturedImage = (
+  context: CanvasRenderingContext2D,
+  texture: HTMLImageElement,
+  polygon: Polygon,
+  offset: Point,
+) => {
+  const bounds = polygonBounds(polygon, offset)
+  const aspect = texture.naturalWidth / Math.max(texture.naturalHeight, 1)
+  const boxAspect = bounds.width / Math.max(bounds.height, 1)
+  let width = bounds.width
+  let height = bounds.height
+  let x = bounds.minX
+  let y = bounds.minY
+
+  if (aspect > boxAspect) {
+    height = width / aspect
+    y = bounds.minY + (bounds.height - height) / 2
+  } else {
+    width = height * aspect
+    x = bounds.minX + (bounds.width - width) / 2
+  }
+
+  context.drawImage(texture, x, y, width, height)
+}
+
+const polygonBounds = (polygon: Polygon, offset: Point) => {
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+
+  for (const point of polygon) {
+    const x = point.x + offset.x
+    const y = point.y + offset.y
+    if (x < minX) minX = x
+    if (y < minY) minY = y
+    if (x > maxX) maxX = x
+    if (y > maxY) maxY = y
+  }
+
+  return { minX, minY, maxX, maxY, width: maxX - minX, height: maxY - minY }
 }
 
 export const drawGame = (context: CanvasRenderingContext2D, options: DrawOptions) => {
@@ -21,7 +104,7 @@ export const drawGame = (context: CanvasRenderingContext2D, options: DrawOptions
   if (options.result) {
     drawSplitResult(context, options)
   } else {
-    drawShape(context, options.shape, options.shapeColor, { x: 0, y: 0 }, options.shapeStyle)
+    drawShape(context, options.shape, options.shapeColor, { x: 0, y: 0 }, options.shapeStyle, options.textureSrc)
   }
 
   if (options.dragLine) {
@@ -122,11 +205,12 @@ const drawSplitResult = (context: CanvasRenderingContext2D, options: DrawOptions
         options.shapeStyle,
         options.dragLine,
         sideForPolygon(polygon, options.dragLine),
+        options.textureSrc,
       )
       return
     }
 
-    drawShape(context, polygon, fill, offset, options.shapeStyle)
+    drawShape(context, polygon, fill, offset, options.shapeStyle, options.textureSrc)
   }
 
   drawHalf(options.result.left, options.shapeColor)
@@ -165,11 +249,12 @@ const drawClippedShape = (
   style: ShapeRenderStyle = 'smooth',
   line: SliceLine,
   side: number,
+  textureSrc?: string,
 ) => {
   context.save()
   traceHalfPlane(context, line, offset, side)
   context.clip()
-  drawShape(context, polygon, fill, offset, style)
+  drawShape(context, polygon, fill, offset, style, textureSrc)
   context.restore()
 }
 
@@ -233,20 +318,29 @@ const drawShape = (
   fill: string,
   offset: Point,
   style: ShapeRenderStyle = 'smooth',
+  textureSrc?: string,
 ) => {
   if (polygon.length === 0) return
 
+  const texture = textureSrc ? getCachedImage(textureSrc) : undefined
+
   context.save()
-  context.shadowColor = 'rgba(0, 0, 0, 0.7)'
-  context.shadowBlur = 24
-  context.shadowOffsetY = 8
-  if (style === 'sharp') {
-    traceSharpPath(context, polygon, offset)
+  context.shadowColor = 'rgba(0, 0, 0, 0.55)'
+  context.shadowBlur = texture ? 18 : 24
+  context.shadowOffsetY = texture ? 6 : 8
+
+  if (texture) {
+    drawTexturedImage(context, texture, polygon, offset)
   } else {
-    tracePath(context, polygon, offset)
+    if (style === 'sharp') {
+      traceSharpPath(context, polygon, offset)
+    } else {
+      tracePath(context, polygon, offset)
+    }
+    context.fillStyle = fill
+    context.fill()
   }
-  context.fillStyle = fill
-  context.fill()
+
   context.restore()
 }
 
